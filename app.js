@@ -36,9 +36,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || "supersecretkey",
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === "production" // true เฉพาะตอน deploy จริง
-  }
+  cookie: { secure: true, } // ถ้าใช้ HTTPS ให้เปลี่ยนเป็น true
 }));
 
 app.use(passport.initialize());
