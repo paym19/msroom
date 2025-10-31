@@ -31,17 +31,12 @@ const logRoutes = require('./Routes/logRoute');
 const passport = require('passport');
 require('./config/googleAuth');
 
-app.set('trust proxy', 1);
 // ✅ ต้องอยู่ก่อน passport.initialize() และ passport.session()
 app.use(session({
   secret: process.env.SESSION_SECRET || "supersecretkey",
   resave: false,
   saveUninitialized: false,
-  cookie:{
-    secure: process.env.NODE_ENV === 'production', // true เมื่อ deploy จริง
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  }// ถ้าใช้ HTTPS ให้เปลี่ยนเป็น true
+  cookie: { secure: true, } // ถ้าใช้ HTTPS ให้เปลี่ยนเป็น true
 }));
 
 app.use(passport.initialize());
