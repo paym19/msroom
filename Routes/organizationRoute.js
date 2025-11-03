@@ -1,16 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const organizationController = require('../Controllers/organizationController');
+const { protect } = require('../middlewares/authMiddleware'); // ✅ import มาด้วย
 
-// CRUD for Organization
-router.post('/', organizationController.createOrganization);
+router.post('/', protect, organizationController.createOrganization);
 router.get('/', organizationController.getAllOrganizations);
 router.get('/:id', organizationController.getOrganizationById);
-router.put('/:id', organizationController.updateOrganization);
-router.delete('/:id', organizationController.deleteOrganization);
+router.put('/:id', protect, organizationController.updateOrganization);
+router.delete('/:id', protect, organizationController.deleteOrganization);
 
-// Add or remove member
-router.post('/:id/add-member', organizationController.addMember);
-router.post('/:id/remove-member', organizationController.removeMember);
+router.post('/:id/add-member', protect, organizationController.addMember);
+router.post('/:id/remove-member', protect, organizationController.removeMember);
 
 module.exports = router;
