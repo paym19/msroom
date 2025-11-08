@@ -1,5 +1,7 @@
 const Room = require('../models/room');
 const Organization = require('../models/organization');
+const { createCalendarEvent } = require('../utils/googleCalendar');
+
 
 // สร้างห้องใหม่
 exports.createRoom = async (req, res) => {
@@ -17,6 +19,35 @@ exports.createRoom = async (req, res) => {
 
     const organization = await Organization.findById(organizationId);
     if (!organization) return res.status(404).json({ message: 'Organization not found' });
+
+        // ข้อมูลเริ่มต้นของ Google Calendar
+    let calendarData = { calendarId: '', syncEnabled: false };
+
+    // ถ้า user ขอให้ระบบสร้าง Calendar อัตโนมัติ
+    if (googleCalendar && googleCalendar.autoCreate === true) {
+      try {
+        const newCalendar = await createCalendarEvent('primary', {
+          summary: `Calendar - ${name}`,
+          description: `ปฏิทินสำหรับห้อง "${name}" ขององค์กร ${organization.name}`,
+        });
+
+        calendarData = {
+          calendarId: newCalendar.id,
+          syncEnabled: true,
+        };
+
+        console.log(`✅ สร้าง Google Calendar สำเร็จ: ${newCalendar.id}`);
+      } catch (error) {
+        console.error('⚠️ ไม่สามารถสร้าง Google Calendar ได้:', error.message);
+      }
+    } 
+    // ถ้ามีการส่ง calendarId มาเอง (ใช้ Calendar เดิม)
+    else if (googleCalendar && googleCalendar.calendarId) {
+      calendarData = {
+        calendarId: googleCalendar.calendarId,
+        syncEnabled: true,
+      };
+    }
 
     const room = await Room.create({
       organizationId,
@@ -117,7 +148,6 @@ exports.setAvailability = async (req, res) => {
 
     room.availableDates = availableDates;
     await room.save();
-
     res.status(200).json(room);
   } catch (err) {
     res.status(500).json({ error: err.message });

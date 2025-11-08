@@ -1,3 +1,4 @@
+const { createCalendarEvent, deleteCalendarEvent } = require('../utils/googleCalendar');
 const Reservation = require('../models/reservation');
 const User = require('../models/user');
 const Room = require('../models/room');
@@ -113,6 +114,25 @@ exports.createReservation = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+
+  // ถ้าเปิดใช้งาน Google Calendar sync
+  if (room.googleCalendar && room.googleCalendar.syncEnabled && room.googleCalendar.calendarId) {
+    try {
+      const event = {
+        summary: `การจองห้อง: ${room.name}`,
+        description: `ผู้จอง: ${user.name} (${user.email})`,
+        start: { dateTime: new Date(startTime).toISOString(), timeZone: 'Asia/Bangkok' },
+        end: { dateTime: new Date(endTime).toISOString(), timeZone: 'Asia/Bangkok' },
+      };
+
+      const googleEvent = await createCalendarEvent(room.googleCalendar.calendarId, event);
+      reservation.googleCalendarEventId = googleEvent.id;
+      await reservation.save();
+    } catch (err) {
+      console.error('⚠️ ไม่สามารถสร้างอีเวนต์บน Google Calendar:', err.message);
+    }
+  }
+
 };
 
 // ดึงการจองทั้งหมด
@@ -277,4 +297,22 @@ exports.updateReservationStatus = async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
+
+  // ถ้ามี Google Calendar Event ให้ลบออก
+  if (
+    ['rejected', 'cancelled'].includes(status) &&
+    reservation.googleCalendarEventId &&
+    reservation.roomId.googleCalendar &&
+    reservation.roomId.googleCalendar.syncEnabled
+  ) {
+    try {
+      await deleteCalendarEvent(
+        reservation.roomId.googleCalendar.calendarId,
+        reservation.googleCalendarEventId
+      );
+    } catch (err) {
+      console.error('⚠️ ลบอีเวนต์จาก Google Calendar ไม่สำเร็จ:', err.message);
+    }
+  }
+
 };
