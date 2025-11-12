@@ -9,3 +9,21 @@ exports.getLogs = async (req, res) => {
   }
 };
 
+/** ฟังก์ชันสร้าง log ใช้ใน controller เท่านั้น */
+exports.createLog = async ({ action, userId, roomId = null, organizationId = null, detail = '' }) => {
+  try {
+    const log = await Log.create({
+      action,
+      userId,
+      roomId,
+      organizationId,
+      detail,
+    });
+    console.log('✅ Log created:', action);
+    return log;
+  } catch (err) {
+    console.error('Error creating log:', err.message);
+    throw err;
+  }
+};
+

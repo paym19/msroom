@@ -80,8 +80,29 @@ const deleteCalendarEvent = async (eventId) => {
   }
 };
 
+function getAuthorizedClient() {
+  if (!oauth2Client) {
+    oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    // ตั้ง token ที่ได้จาก user (ต้องมี refresh_token)
+    oauth2Client.setCredentials({
+      access_token: process.env.GOOGLE_ACCESS_TOKEN,
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+      scope: 'https://www.googleapis.com/auth/calendar',
+      token_type: 'Bearer',
+      expiry_date: true
+    });
+  }
+  return oauth2Client;
+}
+
 module.exports = {
   createCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
+  getAuthorizedClient,
 };

@@ -1,17 +1,33 @@
 const Notification = require('../models/notification');
+const { sendEmail } = require('../utils/sendEmail');
 
-// สร้าง Notification ใหม่
 exports.createNotification = async (req, res) => {
   try {
-    const { title, message, userId, organizationId, roomId } = req.body;
+    const { event, title, message, recipientId, organizationId, roomId, email } = req.body;
+
+    // ตรวจว่ามีค่า required ครบ
+    if (!event || !recipientId) {
+      return res.status(400).json({ error: "`event` and `recipientId` are required" });
+    }
 
     const notification = await Notification.create({
+      event,
       title,
       message,
-      userId,
+      recipientId,
       organizationId,
       roomId,
     });
+
+    // ส่ง email ถ้ามี
+    if (email) {
+      try {
+        await sendEmail(email, title, message);
+        console.log(`✅ Email sent to ${email}`);
+      } catch (err) {
+        console.error(`⚠️ Failed to send email: ${err.message}`);
+      }
+    }
 
     res.status(201).json(notification);
   } catch (err) {
@@ -23,7 +39,7 @@ exports.createNotification = async (req, res) => {
 exports.getAllNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find()
-      .populate('userId', 'name email')
+      .populate('recipientId', 'name email')
       .populate('organizationId', 'name')
       .populate('roomId', 'name');
 
@@ -37,7 +53,7 @@ exports.getAllNotifications = async (req, res) => {
 exports.getNotificationById = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id)
-      .populate('userId', 'name email')
+      .populate('recipientId', 'name email')
       .populate('organizationId', 'name')
       .populate('roomId', 'name');
 

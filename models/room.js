@@ -40,7 +40,7 @@ const roomSchema = new mongoose.Schema({
     syncEnabled: { type: Boolean, default: false }
   },
 
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } //true
 
 }, { timestamps: true });
 

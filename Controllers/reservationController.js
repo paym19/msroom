@@ -3,8 +3,6 @@ const Reservation = require('../models/reservation');
 const User = require('../models/user');
 const Room = require('../models/room');
 const Organization = require('../models/organization');
-const Notification = require('../models/notification');
-const { sendEmail } = require('../utils/sendEmail');
 
 
 // สร้างการจองใหม่
@@ -42,6 +40,7 @@ exports.createReservation = async (req, res) => {
     if (
       rules.allowedUserType &&
       Array.isArray(rules.allowedUserType) &&
+      rules.allowedUserType.length > 0 &&
       !rules.allowedUserType.includes(user.role)
     ) {
       return res.status(403).json({
@@ -84,38 +83,18 @@ exports.createReservation = async (req, res) => {
       endTime,
       questionAnswers: answers,
       status: room.needApproval ? 'pending' : 'approved',
-      assignedStaff: null, // ยังไม่มีผู้ดูแลตอนสร้าง
+      assignedStaff: null,
     });
-
-    const staffList = organization.members.filter(m => ['admin', 'staff'].includes(m.role));
-    const staffIds = staffList.map(m => m.userId._id);
-
-    const notification = await Notification.create({
-      title: `มีการจองห้องใหม่จาก ${user.name}`,
-      message: `ผู้ใช้ ${user.email} ได้ทำการจองห้อง "${room.name}" ในวันที่ ${start.toLocaleString()} ถึง ${end.toLocaleString()}`,
-      userId: user._id,
-      organizationId,
-      roomId,
-    });
-
-     for (const staff of staffList) {
-      await sendEmail(
-        staff.userId.email,
-        'แจ้งเตือนการจองห้องใหม่',
-        `มีการจองห้อง "${room.name}" โดย ${user.name}\n\nกรุณาเข้าสู่ระบบเพื่ออนุมัติหรือปฏิเสธการจองนี้`
-      );
-    }
 
     res.status(201).json({
-      message: 'จองห้องสำเร็จ รอการอนุมัติจากผู้ดูแล',
+      message: 'Reservation created successfully',
       reservation,
-      notification,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 
-  // ถ้าเปิดใช้งาน Google Calendar sync
+  // ถ้าเปิดใช้งาน Google Calendar sync ก็สร้าง event ตามเดิม
   if (room.googleCalendar && room.googleCalendar.syncEnabled && room.googleCalendar.calendarId) {
     try {
       const event = {
@@ -124,16 +103,15 @@ exports.createReservation = async (req, res) => {
         start: { dateTime: new Date(startTime).toISOString(), timeZone: 'Asia/Bangkok' },
         end: { dateTime: new Date(endTime).toISOString(), timeZone: 'Asia/Bangkok' },
       };
-
       const googleEvent = await createCalendarEvent(room.googleCalendar.calendarId, event);
       reservation.googleCalendarEventId = googleEvent.id;
       await reservation.save();
     } catch (err) {
-      console.error('⚠️ ไม่สามารถสร้างอีเวนต์บน Google Calendar:', err.message);
+      console.error('ไม่สามารถสร้างอีเวนต์บน Google Calendar:', err.message);
     }
   }
-
 };
+
 
 // ดึงการจองทั้งหมด
 exports.getAllReservations = async (req, res) => {
@@ -196,10 +174,9 @@ exports.deleteReservation = async (req, res) => {
   }
 };
 
-// อัปเดตสถานะการจอง (approve, reject, cancel)
 exports.updateReservationStatus = async (req, res) => {
   try {
-    const { status, note } = req.body; // 'approved' | 'rejected' | 'cancelled'
+    const { status, note } = req.body;
     const allowedStatus = ['approved', 'rejected', 'cancelled'];
 
     if (!allowedStatus.includes(status))
@@ -213,79 +190,22 @@ exports.updateReservationStatus = async (req, res) => {
     if (!reservation)
       return res.status(404).json({ message: 'Reservation not found' });
 
-    const staff = req.user; // ผู้ที่อนุมัติ ต้องผ่าน middleware auth
+    const staff = req.user; // ผ่าน middleware auth
 
-    // === กรณีอนุมัติ ===
+    reservation.status = status;
     if (status === 'approved') {
-      reservation.status = 'approved';
       reservation.assignedStaff = {
         staffId: staff._id,
         name: staff.name,
         email: staff.email
       };
-      reservation.approvalLog.push({
-        approvedBy: staff._id,
-        status: 'approved',
-        note: note || 'อนุมัติการจอง'
-      });
-
-      // สร้าง Notification
-      await Notification.create({
-        title: 'การจองได้รับการอนุมัติ',
-        message: `ห้อง "${reservation.roomId.name}" ได้รับการอนุมัติแล้วโดย ${staff.name}`,
-        userId: reservation.userId._id,
-        organizationId: reservation.organizationId._id,
-        roomId: reservation.roomId._id,
-      });
-
-      // ส่งอีเมลแจ้งผู้จอง
-      await sendEmail(
-        reservation.userId.email,
-        '🎉 การจองของคุณได้รับการอนุมัติ',
-        `สวัสดี ${reservation.userId.name}\n\nห้อง "${reservation.roomId.name}" ของคุณได้รับการอนุมัติแล้วโดย ${staff.name}.`
-      );
     }
 
-    // === กรณีปฏิเสธ ===
-    if (status === 'rejected') {
-      reservation.status = 'rejected';
-      reservation.approvalLog.push({
-        approvedBy: staff._id,
-        status: 'rejected',
-        note: note || 'ปฏิเสธการจอง'
-      });
-
-      await Notification.create({
-        title: 'การจองถูกปฏิเสธ',
-        message: `ห้อง "${reservation.roomId.name}" ถูกปฏิเสธโดย ${staff.name}`,
-        userId: reservation.userId._id,
-        organizationId: reservation.organizationId._id,
-        roomId: reservation.roomId._id,
-      });
-
-      await sendEmail(
-        reservation.userId.email,
-        'การจองของคุณถูกปฏิเสธ',
-        `สวัสดี ${reservation.userId.name}\n\nห้อง "${reservation.roomId.name}" ของคุณถูกปฏิเสธโดย ${staff.name}.`
-      );
-    }
-
-    // === กรณียกเลิกโดยผู้ใช้ ===
-    if (status === 'cancelled') {
-      reservation.status = 'cancelled';
-      reservation.approvalLog.push({
-        approvedBy: reservation.userId._id,
-        status: 'cancelled',
-        note: note || 'ผู้ใช้ยกเลิกการจอง'
-      });
-
-      await Notification.create({
-        title: 'ผู้ใช้ยกเลิกการจอง',
-        message: `${reservation.userId.name} ได้ยกเลิกการจองห้อง "${reservation.roomId.name}"`,
-        organizationId: reservation.organizationId._id,
-        roomId: reservation.roomId._id,
-      });
-    }
+    reservation.approvalLog.push({
+      approvedBy: staff._id,
+      status,
+      note: note || `Status updated to ${status}`,
+    });
 
     await reservation.save();
 
@@ -298,7 +218,7 @@ exports.updateReservationStatus = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 
-  // ถ้ามี Google Calendar Event ให้ลบออก
+  // ลบ Google Calendar event ถ้า reject หรือ cancel
   if (
     ['rejected', 'cancelled'].includes(status) &&
     reservation.googleCalendarEventId &&
@@ -311,8 +231,7 @@ exports.updateReservationStatus = async (req, res) => {
         reservation.googleCalendarEventId
       );
     } catch (err) {
-      console.error('⚠️ ลบอีเวนต์จาก Google Calendar ไม่สำเร็จ:', err.message);
+      console.error('ลบอีเวนต์จาก Google Calendar ไม่สำเร็จ:', err.message);
     }
   }
-
 };

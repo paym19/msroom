@@ -5,11 +5,12 @@ const User = require('../models/user');
 exports.createOrganization = async (req, res) => {
   try {
     const { name, description, members } = req.body;
+    //const testUserId = "672fbe8c12a45a2a3bcd1234"; 
 
     const organization = await Organization.create({
       name,
       description,
-      createdBy: req.user ? req.user._id : null, // ถ้ามี middleware auth
+      createdBy: req.user ? req.user._id : null, // null 
       members: members || [],
     });
 

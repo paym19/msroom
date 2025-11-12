@@ -3,13 +3,13 @@ const router = express.Router();
 const organizationController = require('../Controllers/organizationController');
 const { protect } = require('../middlewares/authMiddleware'); // ✅ import มาด้วย
 
-router.post('/', protect, organizationController.createOrganization);
+router.post('/', organizationController.createOrganization); //protect
 router.get('/', organizationController.getAllOrganizations);
 router.get('/:id', organizationController.getOrganizationById);
-router.put('/:id', protect, organizationController.updateOrganization);
-router.delete('/:id', protect, organizationController.deleteOrganization);
+router.put('/:id',organizationController.updateOrganization); //protect
+router.delete('/:id',organizationController.deleteOrganization); //protect
 
-router.post('/:id/add-member', protect, organizationController.addMember);
-router.post('/:id/remove-member', protect, organizationController.removeMember);
+router.post('/:id/add-member', organizationController.addMember); //protect
+router.post('/:id/remove-member', organizationController.removeMember); //protect
 
 module.exports = router;

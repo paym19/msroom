@@ -1,9 +1,11 @@
+const mongoose = require('mongoose'); //เพิ่มมา
 const Room = require('../models/room');
 const Organization = require('../models/organization');
+const { google } = require('googleapis');
 const { createCalendarEvent } = require('../utils/googleCalendar');
+const { getAuthorizedClient } = require('../utils/googleCalendar'); // ฟังก์ชันคืน oauth2Client
 
 
-// สร้างห้องใหม่
 exports.createRoom = async (req, res) => {
   try {
     const {
@@ -17,31 +19,60 @@ exports.createRoom = async (req, res) => {
       questionBox
     } = req.body;
 
-    const organization = await Organization.findById(organizationId);
-    if (!organization) return res.status(404).json({ message: 'Organization not found' });
+    // ต้อง login ก่อน
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized: please login' });
+    }
 
-        // ข้อมูลเริ่มต้นของ Google Calendar
+    // ตรวจ organization
+    const organization = await Organization.findById(organizationId);
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+    const orgName = organization?.name || "Unknown Organization";
+
+    // ข้อมูลเริ่มต้นของ Google Calendar
     let calendarData = { calendarId: '', syncEnabled: false };
 
-    // ถ้า user ขอให้ระบบสร้าง Calendar อัตโนมัติ
+    // ตรวจว่าผู้ใช้เป็นสมาชิกหรือ admin
+   const isMember = organization.members.some(m => m.userId.toString() === req.user._id.toString());
+    if (!isMember) {
+      return res.status(403).json({ message: 'You are not a member of this organization' });
+    }
+
+    // สร้าง Calendar จริง ถ้า autoCreate = true
     if (googleCalendar && googleCalendar.autoCreate === true) {
       try {
-        const newCalendar = await createCalendarEvent('primary', {
-          summary: `Calendar - ${name}`,
-          description: `ปฏิทินสำหรับห้อง "${name}" ขององค์กร ${organization.name}`,
+        // รับ OAuth2 client ที่มี token ถูกต้อง
+        const auth = getAuthorizedClient(); 
+        if (!auth) throw new Error("No authorized Google client available");
+
+        const calendar = google.calendar({ version: 'v3', auth });
+
+        const response = await calendar.calendars.insert({
+          requestBody: {
+            summary: `Calendar - ${name}`,
+            description: `ปฏิทินสำหรับห้อง "${name}" ขององค์กร ${orgName}`,
+            timeZone: 'Asia/Bangkok',
+          },
         });
 
-        calendarData = {
-          calendarId: newCalendar.id,
-          syncEnabled: true,
-        };
+        const newCalendar = response?.data;
 
-        console.log(`✅ สร้าง Google Calendar สำเร็จ: ${newCalendar.id}`);
+        if (newCalendar && newCalendar.id) {
+          calendarData = {
+            calendarId: newCalendar.id,
+            syncEnabled: true,
+          };
+          console.log(`สร้าง Google Calendar สำเร็จ: ${newCalendar.id}`);
+        } else {
+          console.warn('Google Calendar returned null or missing id, skipping');
+        }
       } catch (error) {
-        console.error('⚠️ ไม่สามารถสร้าง Google Calendar ได้:', error.message);
+        console.error('ไม่สามารถสร้าง Google Calendar ได้:', error.message);
       }
     } 
-    // ถ้ามีการส่ง calendarId มาเอง (ใช้ Calendar เดิม)
+    // ถ้ามี calendarId ส่งมาเอง
     else if (googleCalendar && googleCalendar.calendarId) {
       calendarData = {
         calendarId: googleCalendar.calendarId,
@@ -49,6 +80,10 @@ exports.createRoom = async (req, res) => {
       };
     }
 
+    // ตั้งค่า createdBy สำหรับทดสอบ
+    //const testCreatorId = new mongoose.Types.ObjectId("68f9d6f693b1e8ff694efe25");
+
+    // สร้าง Room
     const room = await Room.create({
       organizationId,
       name,
@@ -56,7 +91,7 @@ exports.createRoom = async (req, res) => {
       location,
       capacity,
       needApproval: needApproval || false,
-      googleCalendar: googleCalendar || { calendarId: '', syncEnabled: false },
+      googleCalendar: calendarData,
       questionBox: questionBox || [],
       rules: {},
       availableDates: [],
@@ -64,7 +99,9 @@ exports.createRoom = async (req, res) => {
     });
 
     res.status(201).json(room);
+
   } catch (err) {
+    console.error("Error creating room:", err);
     res.status(500).json({ error: err.message });
   }
 };

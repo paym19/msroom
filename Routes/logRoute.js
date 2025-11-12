@@ -4,7 +4,7 @@ const logController = require('../Controllers/logController');
 
 
 router.get('/', logController.getLogs);
-
+router.post('/', logController.createLog)
 
 
 module.exports = router;
