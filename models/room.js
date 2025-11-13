@@ -10,7 +10,7 @@ const roomSchema = new mongoose.Schema({
 
   availableDates: [
     {
-      dayOfWeek: { type: String }, // e.g. 'Monday'
+      dayOfWeek: [{ type: String }], // e.g. 'Monday'
       startTime: { type: String }, // e.g. '09:00'
       endTime: { type: String }    // e.g. '18:00'
     }
