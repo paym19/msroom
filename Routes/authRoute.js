@@ -22,3 +22,48 @@ router.get('/profile', (req, res) => {
 
 module.exports = router;
 
+/**
+ * @openapi
+ * /auth/google:
+ *   get:
+ *     summary: Login with Google OAuth
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect to Google login
+ */
+
+/**
+ * @openapi
+ * /auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Login success
+ */
+
+/**
+ * @openapi
+ * /auth/profile:
+ *   get:
+ *     summary: Get logged-in user profile
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: User profile returned
+ */
+
+/**
+ * @openapi
+ * /auth/logout:
+ *   post:
+ *     summary: Log out user
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Logout success
+ */
+
+

@@ -20,6 +20,7 @@ mongoose.connect(process.env.MONGODB_URI , {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); 
 
+const { swaggerUi, swaggerSpec } = require('./swagger');
 // import routers
 const authRoutes = require('./Routes/authRoute');
 const userRoutes = require('./Routes/userRoute');
@@ -59,7 +60,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/logs', logRoutes)
 app.use('/api/uploads',uploadRoutes);
-
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
 

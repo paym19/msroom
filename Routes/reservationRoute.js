@@ -13,3 +13,52 @@ router.delete('/:id', reservationController.deleteReservation);
 router.post('/:id/status', reservationController.updateReservationStatus);
 
 module.exports = router;
+
+/**
+ * @openapi
+ * /reservations:
+ *   post:
+ *     summary: Create reservation
+ *     tags: [Reservation]
+ */
+
+/**
+ * @openapi
+ * /reservations:
+ *   get:
+ *     summary: Get all reservations
+ *     tags: [Reservation]
+ */
+
+/**
+ * @openapi
+ * /reservations/{id}:
+ *   get:
+ *     summary: Get reservation by ID
+ *     tags: [Reservation]
+ */
+
+/**
+ * @openapi
+ * /reservations/{id}:
+ *   put:
+ *     summary: Update reservation
+ *     tags: [Reservation]
+ */
+
+/**
+ * @openapi
+ * /reservations/{id}:
+ *   delete:
+ *     summary: Delete reservation
+ *     tags: [Reservation]
+ */
+
+/**
+ * @openapi
+ * /reservations/{id}/status:
+ *   patch:
+ *     summary: Update reservation status
+ *     tags: [Reservation]
+ */
+

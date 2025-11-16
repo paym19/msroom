@@ -14,3 +14,61 @@ router.put("/organization/:id", upload.single("image"), uploadController.updateO
 router.delete("/organization/:id", uploadController.deleteOrganizationImage);
 
 module.exports = router;
+
+/**
+ * @openapi
+ * /upload/user:
+ *   post:
+ *     summary: Upload user profile image
+ *     tags: [Upload]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ */
+
+/**
+ * @openapi
+ * /upload/user:
+ *   put:
+ *     summary: Update user profile image
+ *     tags: [Upload]
+ */
+
+/**
+ * @openapi
+ * /upload/user:
+ *   delete:
+ *     summary: Delete user image
+ *     tags: [Upload]
+ */
+
+/**
+ * @openapi
+ * /upload/organization/{id}:
+ *   post:
+ *     summary: Upload organization image
+ *     tags: [Upload]
+ */
+
+/**
+ * @openapi
+ * /upload/organization/{id}:
+ *   put:
+ *     summary: Update organization image
+ *     tags: [Upload]
+ */
+
+/**
+ * @openapi
+ * /upload/organization/{id}:
+ *   delete:
+ *     summary: Delete organization image
+ *     tags: [Upload]
+ */
