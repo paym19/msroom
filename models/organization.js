@@ -8,7 +8,7 @@ const organizationSchema = new mongoose.Schema({
   members: [
     {
       userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true},
-      role: { type: String, enum: ['admin', 'staff'], required: true }
+      role: { type: String, enum: ['Owner', 'staff'], required: true }
     }
   ]
 }, { timestamps: true });
