@@ -28,6 +28,7 @@ const roomRoutes = require('./Routes/roomRoute');
 const reservationRoutes = require('./Routes/reservationRoute');
 const notificationRoutes = require('./Routes/notificationRoute');
 const logRoutes = require('./Routes/logRoute');
+const uploadRoutes = require('./Routes/uploadRoute');
 const passport = require('passport');
 require('./config/googleAuth');
 
@@ -57,6 +58,8 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/logs', logRoutes)
+app.use('/api/uploads',uploadRoutes);
+
 
 
 
