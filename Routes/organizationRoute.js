@@ -18,17 +18,23 @@ module.exports = router;
  * @openapi
  * /organizations:
  *   post:
- *     summary: Create organization
+ *     summary: Create a new organization
  *     tags: [Organization]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - name
  *             properties:
- *               name: { type: string }
- *               description: { type: string }
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
  *               members:
  *                 type: array
  *                 items:
@@ -38,22 +44,29 @@ module.exports = router;
  *                     role: { type: string }
  *     responses:
  *       201:
- *         description: Organization created
- */
-
-/**
- * @openapi
- * /organizations:
+ *         description: Organization created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Organization'
+ *       500:
+ *         description: Internal server error
+ *
  *   get:
  *     summary: Get all organizations
  *     tags: [Organization]
  *     responses:
  *       200:
  *         description: List of organizations
- */
-
-/**
- * @openapi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Organization'
+ *       500:
+ *         description: Internal server error
+ *
  * /organizations/{id}:
  *   get:
  *     summary: Get organization by ID
@@ -63,14 +76,19 @@ module.exports = router;
  *         name: id
  *         required: true
  *         schema: { type: string }
+ *         description: Organization ID
  *     responses:
  *       200:
- *         description: Organization data
- */
-
-/**
- * @openapi
- * /organizations/{id}:
+ *         description: Organization details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Organization'
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ *
  *   put:
  *     summary: Update organization
  *     tags: [Organization]
@@ -78,19 +96,29 @@ module.exports = router;
  *       - in: path
  *         name: id
  *         required: true
+ *         schema: { type: string }
+ *         description: Organization ID
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               description: { type: string }
  *     responses:
  *       200:
- *         description: Organization updated
- */
-
-/**
- * @openapi
- * /organizations/{id}:
+ *         description: Organization updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Organization'
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ *
  *   delete:
  *     summary: Delete organization
  *     tags: [Organization]
@@ -98,55 +126,111 @@ module.exports = router;
  *       - in: path
  *         name: id
  *         required: true
+ *         schema: { type: string }
+ *         description: Organization ID
  *     responses:
  *       200:
- *         description: Organization deleted
- */
-
-/**
- * @openapi
- * /organizations/{id}/add-member:
+ *         description: Organization deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ *
+ * /organizations/{id}/members:
  *   post:
- *     summary: Add member to organization
+ *     summary: Add a member to an organization
  *     tags: [Organization]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         schema: { type: string }
+ *         description: Organization ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - userId
+ *               - role
  *             properties:
  *               userId: { type: string }
  *               role: { type: string }
  *     responses:
  *       200:
- *         description: Member added
- */
-
-/**
- * @openapi
- * /organizations/{id}/remove-member:
- *   post:
- *     summary: Remove member from organization
+ *         description: Member added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Organization'
+ *       400:
+ *         description: User already a member
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ *
+ *   delete:
+ *     summary: Remove a member from an organization
  *     tags: [Organization]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         schema: { type: string }
+ *         description: Organization ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - userId
  *             properties:
  *               userId: { type: string }
  *     responses:
  *       200:
- *         description: Member removed
+ *         description: Member removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Organization'
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ *
+ * components:
+ *   schemas:
+ *     Organization:
+ *       type: object
+ *       properties:
+ *         _id: { type: string }
+ *         name: { type: string }
+ *         description: { type: string }
+ *         createdBy: { type: string, nullable: true }
+ *         members:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: object
+ *                 properties:
+ *                   _id: { type: string }
+ *                   name: { type: string }
+ *                   email: { type: string }
+ *               role: { type: string }
  */
+
+
 
