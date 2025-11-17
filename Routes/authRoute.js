@@ -4,10 +4,10 @@ const authController = require('../Controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
 // ✅ ใช้ GET สำหรับ redirect ไป Google OAuth
-//router.get('/google', authController.googleAuth);
+router.get('/google', authController.googleAuth);
 
 // ✅ Callback จาก Google
-//router.get('/google/callback', authController.googleCallback, authController.authSuccess);
+router.get('/google/callback', authController.googleCallback, authController.authSuccess);
 
 router.post('/google/verify', authController.googleVerifyToken);
 
